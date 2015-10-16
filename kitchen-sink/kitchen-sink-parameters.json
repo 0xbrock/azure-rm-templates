@@ -1,0 +1,48 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "siteName": {
+      "value": "brockintpon"
+    },
+    "hostingPlanName": {
+      "value": "BrockIntPonPlan"
+    },
+    "sku": {
+      "value": "Standard"
+    },
+    "siteLocation": {
+      "value": "East US"
+    },
+    "serverName": {
+      "value": "brockintpondbserver"
+    },
+    "serverLocation": {
+      "value": "East US"
+    },
+    "administratorLogin": {
+      "value": "brock2DbUser"
+    },
+    "administratorLoginPassword": {
+      "value": "CHANGE_ME_C9XOuVKczibWHw3Q4zb1"
+    },
+    "databaseName": {
+      "value": "brockintpondb"
+    },
+    "databaseFirewallStartIpAddress": {
+      "value": "184.17.158.209"
+    },
+    "databaseFirewallEndIpAddress": {
+      "value": "184.17.158.222"
+    },
+    "storageAccountName": {
+      "value": "brockintpon"
+    },
+    "storageLocation": {
+      "value": "East US"
+    },
+    "redisName": {
+      "value": "brockintpon"
+    }
+  }
+}

@@ -1,0 +1,637 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "siteName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the web app that you wish to create."
+      }
+    },
+    "hostingPlanName": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('siteName'),'Plan')]",
+      "metadata": {
+        "description": "The name of the App Service plan to use for hosting the web app."
+      }
+    },
+    "siteLocation": {
+      "type": "string",
+      "allowedValues": [ "East US", "West US", "West Europe", "East Asia", "Southeast Asia" ],
+      "defaultValue": "East US",
+      "metadata": {
+        "description": "The location to use for creating the web app and hosting plan."
+      }
+    },
+    "sku": {
+      "type": "string",
+      "allowedValues": [
+        "Free",
+        "Shared",
+        "Basic",
+        "Standard"
+      ],
+      "defaultValue": "Standard",
+      "metadata": {
+        "description": "The pricing tier for the hosting plan."
+      }
+    },
+    "workerSize": {
+      "type": "string",
+      "allowedValues": [
+        "Small", // 0
+        "Medium", // 1
+        "Large" // 2
+      ],
+      "defaultValue": "Small",
+      "metadata": {
+        "description": "The instance size of the hosting plan (small, medium, or large)."
+      }
+    },
+    "serverName": {
+      "type": "string",
+      "defaultValue": "[toLower(concat(parameters('siteName'),'dbserver'))]",
+      "metadata": {
+        "description": "The name of the new database server to create."
+      }
+    },
+    "serverLocation": {
+      "type": "string",
+      "defaultValue": "[parameters('siteLocation')]",
+      "metadata": {
+        "description": "The location of the database server. For best performance, this location should be the same as the location of the web app."
+      }
+    },
+    "administratorLogin": {
+      "type": "string",
+      "metadata": {
+        "description": "The account name to use for the database server administrator."
+      }
+    },
+    "administratorLoginPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password to use for the database server administrator."
+      }
+    },
+    "databaseName": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('siteName'),'db')]",
+      "metadata": {
+        "description": "The name of the new database to create."
+      }
+    },
+    "collation": {
+      "type": "string",
+      "defaultValue": "SQL_Latin1_General_CP1_CI_AS",
+      "metadata": {
+        "description": "The database collation for governing the proper use of characters."
+      }
+    },
+    "edition": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "metadata": {
+        "description": "The type of database to create."
+      }
+    },
+    "maxSizeBytes": {
+      "type": "string",
+      "defaultValue": "1073741824",
+
+      "metadata": {
+        "description": "The maximum size, in bytes, for the database"
+      }
+    },
+    "requestedServiceObjectiveId": {
+      "type": "string",
+      "defaultValue": "1b1ebd4d-d903-4baa-97f9-4ea675f5e928",
+      "allowedValues": [
+        "dd6d99bb-f193-4ec1-86f2-43d3bccbc49c", /* Basic */
+        "f1173c43-91bd-4aaa-973c-54e79e15235b", /* Standard (S0) */
+        "1b1ebd4d-d903-4baa-97f9-4ea675f5e928", /* Standard (S1) */
+        "455330e1-00cd-488b-b5fa-177c226f28b7", /* Standard (S2) */
+        "789681b8-ca10-4eb0-bdf2-e0b050601b40", /* *Standard (S3) */
+        "7203483a-c4fb-4304-9e9f-17c71c904f5d", /* Premium (P1) */
+        "a7d1b92d-c987-4375-b54d-2b1d0e0f5bb0", /* Premium (P2) */
+        "a7c4c615-cfb1-464b-b252-925be0a19446" /* Premium (P3) */
+      ],
+      "metadata": {
+        "description": "The GUID corresponding to the performance level for edition."
+      }
+    },
+    "databaseFirewallStartIpAddress": {
+      "type": "string",
+      "metadata": {
+        "description": "The local ip address start range, for the database"
+      }
+    },
+    "databaseFirewallEndIpAddress": {
+      "type": "string",
+      "metadata": {
+        "description": "The local ip address end range, for the database"
+      }
+    },
+
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('siteName'),'storage')]",
+      "metadata": {
+        "description": "Name of the Storage Account"
+      }
+    },
+    "storageAccountType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_ZRS"
+      ],
+      "metadata": {
+        "description": "Storage Account type"
+      }
+    },
+    "storageLocation": {
+      "type": "string",
+      "allowedValues": [ "East US", "West US", "West Europe", "East Asia", "Southeast Asia" ],
+      "defaultValue": "[parameters('siteLocation')]", 
+      "metadata": {
+        "description": "Location of storage account"
+      }
+    }
+
+  },
+  "variables": {
+    "siteNameStage": "[concat(parameters('siteName'),'stage')]",
+    "databaseNameStage": "[concat(parameters('databaseName'),'stage')]",
+
+    "storageAccountId": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',resourceGroup().name,'/providers/','Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]",
+    "storageAccountIdStage": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',resourceGroup().name,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountNameStage'))]",
+
+    "storageAccountNameStage": "[concat(parameters('storageAccountName'),'stage')]"
+  },
+  "resources": [
+
+    /*** SQL Database Server ***/
+    {
+      "name": "[parameters('serverName')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[parameters('serverLocation')]",
+      "apiVersion": "2.0",
+      "properties": {
+        "administratorLogin": "[parameters('administratorLogin')]",
+        "administratorLoginPassword": "[parameters('administratorLoginPassword')]"
+      },
+      "resources": [
+        /*** SQL Databases ***/
+        {
+          "name": "[parameters('databaseName')]",
+          "type": "databases",
+          "location": "[parameters('serverLocation')]",
+          "apiVersion": "2.0",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('serverName'))]"
+          ],
+          "properties": {
+            "edition": "[parameters('edition')]",
+            "collation": "[parameters('collation')]",
+            "maxSizeBytes": "[parameters('maxSizeBytes')]",
+            "requestedServiceObjectiveId": "[parameters('requestedServiceObjectiveId')]"
+          }
+        },
+        {
+          "name": "[variables('databaseNameStage')]",
+          "type": "databases",
+          "location": "[parameters('serverLocation')]",
+          "apiVersion": "2.0",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('serverName'))]"
+          ],
+          "properties": {
+            "edition": "[parameters('edition')]",
+            "collation": "[parameters('collation')]",
+            "maxSizeBytes": "[parameters('maxSizeBytes')]",
+            "requestedServiceObjectiveId": "[parameters('requestedServiceObjectiveId')]"
+          }
+        },
+
+        /*** SQL Database Server Firewall Configuration ***/
+        {
+          "apiVersion": "2.0",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('serverName'))]"
+          ],
+          "location": "[parameters('serverLocation')]",
+          "name": "AllowAllWindowsAzureIps",
+          "properties": {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          },
+          "type": "firewallrules"
+        },
+        {
+          "apiVersion": "2.0",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('serverName'))]"
+          ],
+          "location": "[parameters('serverLocation')]",
+          "name": "AllowAllLocalIps",
+          "properties": {
+            "endIpAddress": "[parameters('databaseFirewallEndIpAddress')]",
+            "startIpAddress": "[parameters('databaseFirewallStartIpAddress')]"
+          },
+          "type": "firewallrules"
+        }
+      ]
+    },
+
+    /*** Storage Accounts ***/
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountName')]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[parameters('storageLocation')]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountNameStage')]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[parameters('storageLocation')]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    },
+
+    /*** Hosting Plan ***/
+    {
+      "apiVersion": "2015-04-01",
+      "name": "[parameters('hostingPlanName')]",
+      "type": "Microsoft.Web/serverFarms",
+      "location": "[parameters('siteLocation')]",
+      "properties": {
+        "name": "[parameters('hostingPlanName')]",
+        "sku": "[parameters('sku')]",
+        "workerSize": "[parameters('workerSize')]",
+        "numberOfWorkers": 1
+      }
+    },
+
+    /*** Web App ***/
+    {
+      "apiVersion": "2015-06-01",
+      "name": "[parameters('siteName')]",
+      "type": "Microsoft.Web/Sites",
+      "location": "[parameters('siteLocation')]",
+      "dependsOn": [ "[concat('Microsoft.Web/serverFarms/', parameters('hostingPlanName'))]" ],
+      "tags": {
+        "[concat('hidden-related:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]": "empty"
+      },
+      "properties": {
+        "name": "[parameters('siteName')]",
+        "serverFarmId": "[parameters('hostingPlanName')]"
+      },
+      "resources": [
+        {
+          "apiVersion": "2014-11-01",
+          "type": "config",
+          "name": "connectionstrings",
+          "dependsOn": [
+            "[concat('Microsoft.Web/Sites/', parameters('siteName'))]",
+            "[resourceId('Microsoft.Sql/servers', parameters('serverName'))]"
+          ],
+          "properties": {
+            "DefaultConnection": {
+              "value": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', parameters('serverName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', parameters('databaseName'), ';User Id=', parameters('administratorLogin'), '@', parameters('serverName'), ';Password=', parameters('administratorLoginPassword'), ';')]",
+              "type": "SQLAzure"
+            },
+            "AzureWebJobsDashboard": {
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]",
+              "type": "custom"
+            },
+            "AzureWebJobsStorage": {
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]",
+              "type": "custom"
+            }
+          }
+        },
+        {
+          "apiVersion": "2015-04-01",
+          "name": "appsettings",
+          "type": "config",
+          "dependsOn": [
+            "[concat('Microsoft.Web/Sites/', parameters('siteName'))]"
+          ],
+          "properties": {
+            "Demo:Environment": "PROD",
+            "Test:Environment": ""
+          }
+        },
+        {
+          "apiVersion": "2014-11-01",
+          "name": "slotconfignames",
+          "type": "config",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]"
+          ],
+          "properties": {
+            "connectionStringNames": [ "DefaultConnection", "AzureWebJobsDashboard", "AzureWebJobsStorage", "AzureWebJobsServiceBus", "WebDocDb", "RedisCache" ],
+            "appSettingNames": [ "Demo:Environment", "Test:Environment" ]
+          }
+        },
+
+        /*** Web App STAGING SLOT ***/
+        {
+          "apiVersion": "2015-04-01",
+          "name": "Staging",
+          "type": "slots",
+          "location": "[parameters('siteLocation')]",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]"
+          ],
+          "properties": {
+          },
+          "resources": [
+            {
+              "apiVersion": "2014-11-01",
+              "type": "config",
+              "name": "connectionstrings",
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/Sites/slots', parameters('siteName'), 'Staging')]",
+                "[resourceId('Microsoft.Sql/servers', parameters('serverName'))]"
+              ],
+              "properties": {
+                "DefaultConnection": {
+                  "value": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', parameters('serverName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', variables('databaseNameStage'), ';User Id=', parameters('administratorLogin'), '@', parameters('serverName'), ';Password=', parameters('administratorLoginPassword'), ';')]",
+                  "type": "SQLAzure"
+                },
+                "AzureWebJobsDashboard": {
+                  "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountNameStage'), ';AccountKey=', listKeys(variables('storageAccountIdStage'),'2015-05-01-preview').key1)]",
+                  "type": "custom"
+                },
+                "AzureWebJobsStorage": {
+                  "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountNameStage'), ';AccountKey=', listKeys(variables('storageAccountIdStage'),'2015-05-01-preview').key1)]",
+                  "type": "custom"
+                }
+              }
+            },
+            {
+              "apiVersion": "2015-04-01",
+              "name": "appsettings",
+              "type": "config",
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/Sites/slots', parameters('siteName'), 'Staging')]"
+              ],
+              "properties": {
+                "Demo:Environment": "TEST",
+                "Test:Environment": "TEST"
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    /*** Azure Insights ***/
+    {
+      "apiVersion": "2014-04-01",
+      "name": "[concat('ServerErrors ', parameters('siteName'))]",
+      "type": "microsoft.insights/alertrules",
+      "location": "East US",
+      "dependsOn": [ "[concat('Microsoft.Web/sites/', parameters('siteName'))]" ],
+      "tags": { "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', parameters('siteName'))]": "Resource" },
+      "properties": {
+        "name": "[concat('ServerErrors ', parameters('siteName'))]",
+        "description": "[concat(parameters('siteName'), ' has some server errors, status code 5xx.')]",
+        "isEnabled": false,
+        "condition": {
+          "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.ThresholdRuleCondition",
+          "dataSource": {
+            "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleMetricDataSource",
+            "resourceUri": "[concat(resourceGroup().id, '/providers/Microsoft.Web/sites/', parameters('siteName'))]",
+            "metricName": "Http5xx"
+          },
+          "operator": "GreaterThan",
+          "threshold": 0.0,
+          "windowSize": "PT5M"
+        },
+        "action": {
+          "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleEmailAction",
+          "sendToServiceOwners": true,
+          "customEmails": [ ]
+        }
+      }
+    },
+    {
+      "apiVersion": "2014-04-01",
+      "name": "[concat('ForbiddenRequests ', parameters('siteName'))]",
+      "type": "microsoft.insights/alertrules",
+      "location": "East US",
+      "dependsOn": [
+        "[concat('Microsoft.Web/sites/', parameters('siteName'))]"
+      ],
+      "tags": {
+        "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', parameters('siteName'))]": "Resource"
+      },
+      "properties": {
+        "name": "[concat('ForbiddenRequests ', parameters('siteName'))]",
+        "description": "[concat(parameters('siteName'), ' has some requests that are forbidden, status code 403.')]",
+        "isEnabled": false,
+        "condition": {
+          "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.ThresholdRuleCondition",
+          "dataSource": {
+            "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleMetricDataSource",
+            "resourceUri": "[concat(resourceGroup().id, '/providers/Microsoft.Web/sites/', parameters('siteName'))]",
+            "metricName": "Http403"
+          },
+          "operator": "GreaterThan",
+          "threshold": 0,
+          "windowSize": "PT5M"
+        },
+        "action": {
+          "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleEmailAction",
+          "sendToServiceOwners": true,
+          "customEmails": [ ]
+        }
+      }
+    },
+    {
+      "apiVersion": "2014-04-01",
+      "name": "[concat('CPUHigh ', parameters('hostingPlanName'))]",
+      "type": "microsoft.insights/alertrules",
+      "location": "East US",
+      "dependsOn": [
+        "[concat('Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]"
+      ],
+      "tags": {
+        "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]": "Resource"
+      },
+      "properties": {
+        "name": "[concat('CPUHigh ', parameters('hostingPlanName'))]",
+        "description": "[concat('The average CPU is high across all the instances of ', parameters('hostingPlanName'))]",
+        "isEnabled": false,
+        "condition": {
+          "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.ThresholdRuleCondition",
+          "dataSource": {
+            "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleMetricDataSource",
+            "resourceUri": "[concat(resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]",
+            "metricName": "CpuPercentage"
+          },
+          "operator": "GreaterThan",
+          "threshold": 60,
+          "windowSize": "PT15M"
+        },
+        "action": {
+          "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleEmailAction",
+          "sendToServiceOwners": true,
+          "customEmails": [ ]
+        }
+      }
+    },
+    {
+      "apiVersion": "2014-04-01",
+      "name": "[concat('LongHttpQueue ', parameters('hostingPlanName'))]",
+      "type": "microsoft.insights/alertrules",
+      "location": "East US",
+      "dependsOn": [
+        "[concat('Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]"
+      ],
+      "tags": {
+        "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]": "Resource"
+      },
+      "properties": {
+        "name": "[concat('LongHttpQueue ', parameters('hostingPlanName'))]",
+        "description": "[concat('The HTTP queue for the instances of ', parameters('hostingPlanName'), ' has a large number of pending requests.')]",
+        "isEnabled": false,
+        "condition": {
+          "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.ThresholdRuleCondition",
+          "dataSource": {
+            "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleMetricDataSource",
+            "resourceUri": "[concat(resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]",
+            "metricName": "HttpQueueLength"
+          },
+          "operator": "GreaterThan",
+          "threshold": 100.0,
+          "windowSize": "PT5M"
+        },
+        "action": {
+          "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.RuleEmailAction",
+          "sendToServiceOwners": true,
+          "customEmails": [ ]
+        }
+      }
+    },
+    {
+      "apiVersion": "2014-04-01",
+      "name": "[parameters('siteName')]",
+      "type": "microsoft.insights/components",
+      "location": "Central US",
+      "dependsOn": [
+        "[concat('Microsoft.Web/sites/', parameters('siteName'))]"
+      ],
+      "tags": {
+        "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', parameters('siteName'))]": "Resource"
+      },
+      "properties": {
+        "ApplicationId": "[parameters('siteName')]"
+      }
+    },
+    {
+      "apiVersion": "2014-04-01",
+      "name": "[concat(parameters('hostingPlanName'), '-', resourceGroup().name)]",
+      "type": "microsoft.insights/autoscalesettings",
+      "location": "East US",
+      "tags": {
+        "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]": "Resource"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]"
+      ],
+      "properties": {
+        "profiles": [
+          {
+            "name": "Default",
+            "capacity": {
+              "minimum": "1",
+              "maximum": "4",
+              "default": "1"
+            },
+            "rules": [
+              {
+                "metricTrigger": {
+                  "metricName": "CpuPercentage",
+                  "metricResourceUri": "[concat(resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]",
+                  "timeGrain": "PT1M",
+                  "statistic": "Average",
+                  "timeWindow": "PT10M",
+                  "timeAggregation": "Average",
+                  "operator": "GreaterThan",
+                  "threshold": 80.0
+                },
+                "scaleAction": {
+                  "direction": "Increase",
+                  "type": "ChangeCount",
+                  "value": "1",
+                  "cooldown": "PT10M"
+                }
+              },
+              {
+                "metricTrigger": {
+                  "metricName": "CpuPercentage",
+                  "metricResourceUri": "[concat(resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]",
+                  "timeGrain": "PT1M",
+                  "statistic": "Average",
+                  "timeWindow": "PT1H",
+                  "timeAggregation": "Average",
+                  "operator": "LessThan",
+                  "threshold": 60.0
+                },
+                "scaleAction": {
+                  "direction": "Decrease",
+                  "type": "ChangeCount",
+                  "value": "1",
+                  "cooldown": "PT1H"
+                }
+              }
+            ]
+          }
+        ],
+        "enabled": false,
+        "name": "[concat(parameters('hostingPlanName'), '-', resourceGroup().name)]",
+        "targetResourceUri": "[concat(resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]"
+      }
+    }
+  ],
+  "outputs": {
+    //"siteUri": {
+    //  "type": "string",
+    //  "value": "[concat('http://',reference(resourceId('Microsoft.Web/sites', parameters('siteName'))).hostNames[0])]"
+    //},
+    "siteName": {
+      "type": "string",
+      "value": "[parameters('siteName')]"
+    },
+
+    "DatabaseConnectionString": {
+      "value": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', parameters('serverName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', parameters('databaseName'), ';User Id=', parameters('administratorLogin'), '@', parameters('serverName'), ';Password=', parameters('administratorLoginPassword'), ';')]",
+      "type": "string"
+    },
+    "DatabaseConnectionStringStage": {
+      "value": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', parameters('serverName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', variables('databaseNameStage'), ';User Id=', parameters('administratorLogin'), '@', parameters('serverName'), ';Password=', parameters('administratorLoginPassword'), ';')]",
+      "type": "string"
+    },
+
+
+    "StorageConnectionString": {
+      "type": "string",
+      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]"
+    },
+    "StorageConnectionStringStage": {
+      "type": "string",
+      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountNameStage'), ';AccountKey=', listKeys(variables('storageAccountIdStage'),'2015-05-01-preview').key1)]"
+    }
+  }
+}

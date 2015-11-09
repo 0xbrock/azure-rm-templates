@@ -11,6 +11,31 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "kitchen-sink", "kitchen-sin
 		kitchen-sink\README.md = kitchen-sink\README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "create-db-import-bacpac", "create-db-import-bacpac", "{3FFC491D-5DFE-4CFD-AADC-E8388D7DC692}"
+	ProjectSection(SolutionItems) = preProject
+		create-db-import-bacpac\Azure.publishsettings = create-db-import-bacpac\Azure.publishsettings
+		create-db-import-bacpac\BrockIntPon.bacpac = create-db-import-bacpac\BrockIntPon.bacpac
+		create-db-import-bacpac\create-db-import-bacpac-parameters.json = create-db-import-bacpac\create-db-import-bacpac-parameters.json
+		create-db-import-bacpac\create-db-import-bacpac.json = create-db-import-bacpac\create-db-import-bacpac.json
+		create-db-import-bacpac\deploy.ps1 = create-db-import-bacpac\deploy.ps1
+		create-db-import-bacpac\README.md = create-db-import-bacpac\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "webapp-db", "webapp-db", "{DBA64C1A-37CE-4540-97DF-67F648EDB243}"
+	ProjectSection(SolutionItems) = preProject
+		webapp-db\Azure.publishsettings = webapp-db\Azure.publishsettings
+		webapp-db\deploy.ps1 = webapp-db\deploy.ps1
+		webapp-db\README.md = webapp-db\README.md
+		webapp-db\webapp-db-parameters.json = webapp-db\webapp-db-parameters.json
+		webapp-db\webapp-db.json = webapp-db\webapp-db.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F7D5B855-0A2E-4C64-BB7F-A9C49E09C1D4}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

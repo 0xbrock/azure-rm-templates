@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "siteName": {
+      "value": "brockintpon"
+    },
+    "siteLocation": {
+      "value": "East US"
+    },
+    "administratorLogin": {
+      "value": "brock2DbUser"
+    },
+    "administratorLoginPassword": {
+      "value": "CHANGE_ME_C9XOuVKczibWHw3Q4zb1"
+    },
+    "databaseFirewallStartIpAddress": {
+      "value": "184.17.158.209"
+    },
+    "databaseFirewallEndIpAddress": {
+      "value": "184.17.158.222"
+    }
+  }
+}

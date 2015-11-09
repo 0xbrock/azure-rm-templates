@@ -1,0 +1,241 @@
+﻿{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "siteName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the web app that you wish to create."
+      }
+    },
+    "siteLocation": {
+      "type": "string",
+      "allowedValues": [ "East US", "West US", "West Europe", "East Asia", "Southeast Asia" ],
+      "defaultValue": "East US",
+      "metadata": {
+        "description": "The location to use for creating the web app and hosting plan."
+      }
+    },
+    
+    "serverName": {
+      "type": "string",
+      "defaultValue": "[toLower(concat(parameters('siteName'),'dbserver'))]",
+      "metadata": {
+        "description": "The name of the new database server to create."
+      }
+    },
+    "serverLocation": {
+      "type": "string",
+      "defaultValue": "[parameters('siteLocation')]",
+      "metadata": {
+        "description": "The location of the database server. For best performance, this location should be the same as the location of the web app."
+      }
+    },
+    "administratorLogin": {
+      "type": "string",
+      "metadata": {
+        "description": "The account name to use for the database server administrator."
+      }
+    },
+    "administratorLoginPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password to use for the database server administrator."
+      }
+    },
+    "databaseName": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('siteName'),'db')]",
+      "metadata": {
+        "description": "The name of the new database to create."
+      }
+    },
+    "collation": {
+      "type": "string",
+      "defaultValue": "SQL_Latin1_General_CP1_CI_AS",
+      "metadata": {
+        "description": "The database collation for governing the proper use of characters."
+      }
+    },
+    "edition": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "metadata": {
+        "description": "The type of database to create."
+      }
+    },
+    "maxSizeBytes": {
+      "type": "string",
+      "defaultValue": "1073741824",
+
+      "metadata": {
+        "description": "The maximum size, in bytes, for the database"
+      }
+    },
+    "requestedServiceObjectiveId": {
+      "type": "string",
+      "defaultValue": "1b1ebd4d-d903-4baa-97f9-4ea675f5e928",
+      "allowedValues": [
+        "dd6d99bb-f193-4ec1-86f2-43d3bccbc49c", /* Basic */
+        "f1173c43-91bd-4aaa-973c-54e79e15235b", /* Standard (S0) */
+        "1b1ebd4d-d903-4baa-97f9-4ea675f5e928", /* Standard (S1) */
+        "455330e1-00cd-488b-b5fa-177c226f28b7", /* Standard (S2) */
+        "789681b8-ca10-4eb0-bdf2-e0b050601b40", /* *Standard (S3) */
+        "7203483a-c4fb-4304-9e9f-17c71c904f5d", /* Premium (P1) */
+        "a7d1b92d-c987-4375-b54d-2b1d0e0f5bb0", /* Premium (P2) */
+        "a7c4c615-cfb1-464b-b252-925be0a19446" /* Premium (P3) */
+      ],
+      "metadata": {
+        "description": "The GUID corresponding to the performance level for edition."
+      }
+    },
+    "databaseFirewallStartIpAddress": {
+      "type": "string",
+      "metadata": {
+        "description": "The local ip address start range, for the database"
+      }
+    },
+    "databaseFirewallEndIpAddress": {
+      "type": "string",
+      "metadata": {
+        "description": "The local ip address end range, for the database"
+      }
+    },
+
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "[concat(parameters('siteName'),'storage')]",
+      "metadata": {
+        "description": "Name of the Storage Account"
+      }
+    },
+    "storageAccountType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_ZRS"
+      ],
+      "metadata": {
+        "description": "Storage Account type"
+      }
+    },
+    "storageLocation": {
+      "type": "string",
+      "allowedValues": [ "East US", "West US", "West Europe", "East Asia", "Southeast Asia" ],
+      "defaultValue": "[parameters('siteLocation')]",
+      "metadata": {
+        "description": "Location of storage account"
+      }
+    }
+  },
+  "variables": {
+    "storageAccountId": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',resourceGroup().name,'/providers/','Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]"
+  },
+  "resources": [
+
+    /*** SQL Database Server ***/
+    {
+      "name": "[parameters('serverName')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[parameters('serverLocation')]",
+      "apiVersion": "2.0",
+      "properties": {
+        "administratorLogin": "[parameters('administratorLogin')]",
+        "administratorLoginPassword": "[parameters('administratorLoginPassword')]"
+      },
+      "resources": [
+        /*** SQL Databases ***/
+        {
+          "name": "[parameters('databaseName')]",
+          "type": "databases",
+          "location": "[parameters('serverLocation')]",
+          "apiVersion": "2.0",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('serverName'))]"
+          ],
+          "properties": {
+            "edition": "[parameters('edition')]",
+            "collation": "[parameters('collation')]",
+            "maxSizeBytes": "[parameters('maxSizeBytes')]",
+            "requestedServiceObjectiveId": "[parameters('requestedServiceObjectiveId')]"
+          }
+        },
+
+        /*** SQL Database Server Firewall Configuration ***/
+        {
+          "apiVersion": "2.0",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('serverName'))]"
+          ],
+          "location": "[parameters('serverLocation')]",
+          "name": "AllowAllWindowsAzureIps",
+          "properties": {
+            "endIpAddress": "0.0.0.0",
+            "startIpAddress": "0.0.0.0"
+          },
+          "type": "firewallrules"
+        },
+        {
+          "apiVersion": "2.0",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('serverName'))]"
+          ],
+          "location": "[parameters('serverLocation')]",
+          "name": "AllowAllLocalIps",
+          "properties": {
+            "endIpAddress": "[parameters('databaseFirewallEndIpAddress')]",
+            "startIpAddress": "[parameters('databaseFirewallStartIpAddress')]"
+          },
+          "type": "firewallrules"
+        }
+      ]
+    },
+
+    /*** Storage Accounts ***/
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountName')]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[parameters('storageLocation')]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+    }
+  ],
+  "outputs": {
+
+    "databaseConnectionString": {
+      "value": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', parameters('serverName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', parameters('databaseName'), ';User Id=', parameters('administratorLogin'), '@', parameters('serverName'), ';Password=', parameters('administratorLoginPassword'), ';')]",
+      "type": "string"
+    },
+
+    "sqlServerName": {
+        "type": "string",
+        "value": "[parameters('serverName')]"
+    },
+    "sqlDatabaseName": {
+        "type": "string",
+        "value": "[parameters('databaseName')]"
+    },
+    "sqlLogin": {
+        "type": "string",
+        "value": "[parameters('administratorLogin')]"
+    },
+    "sqlPassword": {
+        "type": "string",
+        "value": "[parameters('administratorLoginPassword')]"
+    },
+
+    "storageAccountName": {
+      "type": "string",
+      "value": "[parameters('storageAccountName')]"
+    },
+    "storageKey": {
+      "type": "string",
+      "value": "[listKeys(variables('storageAccountId'),'2015-05-01-preview').key1]"
+    }
+
+  }
+}

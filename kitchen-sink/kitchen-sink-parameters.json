@@ -5,36 +5,36 @@
     "siteName": {
       "value": "brockintpon"
     },
-    "hostingPlanName": {
+    /*"hostingPlanName": {
       "value": "BrockIntPonPlan"
-    },
+    },*/
     "sku": {
       "value": "Standard"
     },
     "siteLocation": {
       "value": "East US"
     },
-    "serverName": {
+    /*"serverName": {
       "value": "brockintpondbserver"
     },
     "serverLocation": {
       "value": "East US"
-    },
+    },*/
     "administratorLogin": {
       "value": "brock2DbUser"
     },
     "administratorLoginPassword": {
       "value": "CHANGE_ME_C9XOuVKczibWHw3Q4zb1"
     },
-    "databaseName": {
+    /*"databaseName": {
       "value": "brockintpondb"
-    },
+    },*/
     "databaseFirewallStartIpAddress": {
       "value": "184.17.158.209"
     },
     "databaseFirewallEndIpAddress": {
       "value": "184.17.158.222"
-    },
+    }/*,
     "storageAccountName": {
       "value": "brockintpon"
     },
@@ -43,6 +43,6 @@
     },
     "redisName": {
       "value": "brockintpon"
-    }
+    }*/
   }
 }

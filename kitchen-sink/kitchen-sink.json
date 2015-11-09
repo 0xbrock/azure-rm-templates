@@ -10,12 +10,15 @@
     },
     "hostingPlanName": {
       "type": "string",
+      "defaultValue": "[concat(parameters('siteName'),'Plan')]",
       "metadata": {
         "description": "The name of the App Service plan to use for hosting the web app."
       }
     },
     "siteLocation": {
       "type": "string",
+      "allowedValues": [ "East US", "West US", "West Europe", "East Asia", "Southeast Asia" ],
+      "defaultValue": "East US",
       "metadata": {
         "description": "The location to use for creating the web app and hosting plan."
       }
@@ -47,12 +50,14 @@
     },
     "serverName": {
       "type": "string",
+      "defaultValue": "[toLower(concat(parameters('siteName'),'dbserver'))]",
       "metadata": {
         "description": "The name of the new database server to create."
       }
     },
     "serverLocation": {
       "type": "string",
+      "defaultValue": "[parameters('siteLocation')]",
       "metadata": {
         "description": "The location of the database server. For best performance, this location should be the same as the location of the web app."
       }
@@ -71,6 +76,7 @@
     },
     "databaseName": {
       "type": "string",
+      "defaultValue": "[concat(parameters('siteName'),'db')]",
       "metadata": {
         "description": "The name of the new database to create."
       }
@@ -129,6 +135,7 @@
 
     "storageAccountName": {
       "type": "string",
+      "defaultValue": "[concat(parameters('siteName'),'storage')]",
       "metadata": {
         "description": "Name of the Storage Account"
       }
@@ -148,12 +155,14 @@
     "storageLocation": {
       "type": "string",
       "allowedValues": [ "East US", "West US", "West Europe", "East Asia", "Southeast Asia" ],
+      "defaultValue": "[parameters('siteLocation')]",
       "metadata": {
         "description": "Location of storage account"
       }
     },
     "redisName": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": "[concat(parameters('siteName'),'cache')]",
     },
     "redisNameSKUName": {
       "type": "string",
@@ -201,6 +210,8 @@
 
   },
   "variables": {
+    "region": "[toLower(replace(parameters('siteLocation'),' ', ''))]",
+
     "siteNameStage": "[concat(parameters('siteName'),'stage')]",
     "databaseNameStage": "[concat(parameters('databaseName'),'stage')]",
     "databaseNameDev": "[concat(parameters('databaseName'),'dev')]",
@@ -564,7 +575,7 @@
     //    "targetResourceUri": "[concat(resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]"
     //  }
     //},
-    
+
     /*** Azure Insights ***/
     {
       "apiVersion": "2014-04-01",
@@ -776,50 +787,43 @@
     }
   ],
   "outputs": {
-    //"siteUri": {
-    //  "type": "string",
-    //  "value": "[concat('http://',reference(resourceId('Microsoft.Web/sites', parameters('siteName'))).hostNames[0])]"
-    //},
-    "siteName": {
+    "siteUri": {
       "type": "string",
-      "value": "[parameters('siteName')]"
+      "value": "[concat('http://',reference(resourceId('Microsoft.Web/sites', parameters('siteName'))).hostNames[0])]"
     },
 
-    "DatabaseConnectionString": {
+
+    "databaseConnectionString": {
       "value": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', parameters('serverName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', parameters('databaseName'), ';User Id=', parameters('administratorLogin'), '@', parameters('serverName'), ';Password=', parameters('administratorLoginPassword'), ';')]",
       "type": "string"
     },
-    "DatabaseConnectionStringStage": {
+    "databaseConnectionStringStage": {
       "value": "[concat('Data Source=tcp:', reference(concat('Microsoft.Sql/servers/', parameters('serverName'))).fullyQualifiedDomainName, ',1433;Initial Catalog=', variables('databaseNameStage'), ';User Id=', parameters('administratorLogin'), '@', parameters('serverName'), ';Password=', parameters('administratorLoginPassword'), ';')]",
       "type": "string"
     },
 
 
-    "StorageConnectionString": {
+    "storageConnectionString": {
       "type": "string",
       "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'),'2015-05-01-preview').key1)]"
     },
-    "StorageConnectionStringStage": {
+    "storageConnectionStringStage": {
       "type": "string",
       "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountNameStage'), ';AccountKey=', listKeys(variables('storageAccountIdStage'),'2015-05-01-preview').key1)]"
     },
 
 
-    "DocDbConnectionString": {
+    "docDbConnectionString": {
       "value": "[concat('AccountEndpoint=', reference(concat('Microsoft.DocumentDb/databaseAccounts/', parameters('databaseName'))).documentEndpoint, ';AccountKey=', listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts', parameters('databaseName')), '2015-04-08').primaryMasterKey, ';')]",
       "type": "string"
     },
-    //"DocDbConnectionStringDev": {
-    //  "value": "[concat('AccountEndpoint=', reference(concat('Microsoft.DocumentDb/databaseAccounts/', variables('databaseNameDev'))).documentEndpoint, ';AccountKey=', listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts', variables('databaseNameDev')), '2015-04-08').primaryMasterKey, ';')]",
-    //  "type": "string"
-    //},
-    "DocDbConnectionStringStage": {
+    "docDbConnectionStringStage": {
       "value": "[concat('AccountEndpoint=', reference(concat('Microsoft.DocumentDb/databaseAccounts/', variables('databaseNameStage'))).documentEndpoint, ';AccountKey=', listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts', variables('databaseNameStage')), '2015-04-08').primaryMasterKey, ';')]",
       "type": "string"
     },
 
 
-    "RedisConnectionString": {
+    "redisConnectionString": {
       "type": "string",
       "value": "[listKeys(resourceId('Microsoft.Cache/Redis', parameters('redisName')), '2014-04-01').primaryKey]",
     }

@@ -171,6 +171,7 @@ ClientBin/
 *.dbproj.schemaview
 *.pfx
 *.publishsettings
+*.bacpac
 node_modules/
 orleans.codegen.cs
 

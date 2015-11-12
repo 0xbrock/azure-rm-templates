@@ -76,7 +76,7 @@
     },
     "databaseName": {
       "type": "string",
-      "defaultValue": "[concat(parameters('siteName'),'db')]",
+      "defaultValue": "[toLower(concat(parameters('siteName'),'db'))]",
       "metadata": {
         "description": "The name of the new database to create."
       }
@@ -300,8 +300,8 @@
           "type": "config",
           "name": "connectionstrings",
           "dependsOn": [
-            "[concat('Microsoft.Web/Sites/', parameters('siteName'))]",
-            "[resourceId('Microsoft.Sql/servers', parameters('serverName'))]"
+            "[concat('Microsoft.Web/Sites/', parameters('siteName'))]"
+            //, "[resourceId('Microsoft.Sql/servers', parameters('serverName'))]"
           ],
           "properties": {
             "DefaultConnection": {
@@ -360,8 +360,8 @@
               "type": "config",
               "name": "connectionstrings",
               "dependsOn": [
-                "[resourceId('Microsoft.Web/Sites/slots', parameters('siteName'), 'Staging')]",
-                "[resourceId('Microsoft.Sql/servers', parameters('serverName'))]"
+                "[resourceId('Microsoft.Web/Sites/slots', parameters('siteName'), 'Staging')]"
+                //, "[resourceId('Microsoft.Sql/servers', parameters('serverName'))]"
               ],
               "properties": {
                 "DefaultConnection": {
